@@ -95,20 +95,24 @@ namespace AsyncTask {
 
 			T& await_resume() { return static_cast<value_task_data*>(_data.get())->_value.value(); }
 
-			T& Join()
-			{
+			T& Join() {
 				[this]() -> TemplateTask<void>{
 					co_await *this;
 				}().Join();
 				return await_resume();
 			}
-			static TemplateTask<T> Run(std::function<T()> action)
-			{
+			static TemplateTask<T> Run(std::function<T()> action) {
 				auto result = std::make_shared<std::optional<T>>();
 				co_await TemplateTask<void>::Run([result, action]() {
 						*result = std::move(action());
 					});
 				co_return std::move(result->value());
+			}
+			static TemplateTask<T> FromResult(T value) {
+				TemplateTask<T>::promise_type promise{};
+				auto task = promise.get_return_object();
+				promise.return_value(std::move(value));
+				return std::move(task);
 			}
 
 		};
@@ -130,7 +134,8 @@ namespace AsyncTask {
 
 			void Join();
 			static TemplateTask<void> Run(std::function<void()> action);
-
+			static TemplateTask<void> CompletedTask();
+			static TemplateTask<void> Delay(std::chrono::milliseconds ms);
 		};
 
 		class ThreadLinkedPool {

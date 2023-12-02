@@ -8,10 +8,13 @@ using namespace std;
 #define coReturn(expr) co_return expr
 
 RecursiveAsync: (i: int) -> Task<int> = {
+	await(Task<void>::Delay(100ms));
 	cout << i << "\n";
 	if i < 5 {
 		n:= await(RecursiveAsync(i + 1));
-		coReturn(n + i);
+		await(Task<void>::CompletedTask());
+		result:= await(Task<int>::FromResult(n + i));
+		coReturn(result);
 	}
 	else {
 		n:= await(Task<int>::Run(:()->int=100));

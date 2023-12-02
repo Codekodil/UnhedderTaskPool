@@ -73,6 +73,9 @@ AsyncTask: namespace = {
 					waiting: binary_semaphore = 0;
 					{
 						_: lock_guard<mutex> = _lock;
+						if _shutdown {
+							return;
+						}
 						_waiting.push_back(waiting&);
 					}
 					waiting.acquire();
@@ -185,6 +188,27 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Run(function<void()> 
 			action();
 			promiseCopy.return_void();
 		});
+	return move(task);
+}
+
+TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::CompletedTask() {
+	TemplateTask<void>::promise_type promise{};
+	auto task = promise.get_return_object();
+	promise.return_void();
+	return move(task);
+}
+
+TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Delay(chrono::milliseconds ms) {
+	auto desiredEnd = std::chrono::system_clock::now() + ms;
+	TemplateTask<void>::promise_type promise{};
+	auto task = promise.get_return_object();
+	thread([promise, desiredEnd]() {
+			auto promiseCopy = promise;
+			auto toWait = chrono::duration_cast<chrono::milliseconds>(desiredEnd - std::chrono::system_clock::now());
+			if(toWait > 0ms)
+				this_thread::sleep_for(toWait);
+			promiseCopy.return_void();
+		}).detach();
 	return move(task);
 }
 

@@ -18,7 +18,7 @@ namespace AsyncTask {
  class TaskPoolImpl;
   
 
-#line 109 "TaskPool.cpp2"
+#line 112 "TaskPool.cpp2"
 }
 
 
@@ -74,20 +74,20 @@ namespace AsyncTask {
 #line 66 "TaskPool.cpp2"
   public: auto WorkerEntry() & -> void;
 
-#line 82 "TaskPool.cpp2"
+#line 85 "TaskPool.cpp2"
   public: ~TaskPoolImpl() noexcept;
 
-#line 88 "TaskPool.cpp2"
+#line 91 "TaskPool.cpp2"
   public: auto MoveThread(thread&& thread) & -> void;
 
-#line 92 "TaskPool.cpp2"
+#line 95 "TaskPool.cpp2"
   public: [[nodiscard]] static auto Local() -> shared_ptr<TaskPoolImpl>;
   public: TaskPoolImpl() = default;
   public: TaskPoolImpl(TaskPoolImpl const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(TaskPoolImpl const&) -> void = delete;
 
 
-#line 107 "TaskPool.cpp2"
+#line 110 "TaskPool.cpp2"
  };
 
 }
@@ -169,6 +169,27 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Run(function<void()> 
 			action();
 			promiseCopy.return_void();
 		});
+	return move(task);
+}
+
+TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::CompletedTask() {
+	TemplateTask<void>::promise_type promise{};
+	auto task = promise.get_return_object();
+	promise.return_void();
+	return move(task);
+}
+
+TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Delay(chrono::milliseconds ms) {
+	auto desiredEnd = std::chrono::system_clock::now() + ms;
+	TemplateTask<void>::promise_type promise{};
+	auto task = promise.get_return_object();
+	thread([promise, desiredEnd]() {
+			auto promiseCopy = promise;
+			auto toWait = chrono::duration_cast<chrono::milliseconds>(desiredEnd - std::chrono::system_clock::now());
+			if(toWait > 0ms)
+				this_thread::sleep_for(toWait);
+			promiseCopy.return_void();
+		}).detach();
 	return move(task);
 }
 
@@ -256,6 +277,9 @@ namespace AsyncTask {
      binary_semaphore waiting {0}; 
      {
       lock_guard<mutex> auto_75_7 {_lock}; 
+      if (_shutdown) {
+       return ; 
+      }
       CPP2_UFCS(push_back, _waiting, &waiting);
      }
      CPP2_UFCS_0(acquire, waiting);
@@ -288,6 +312,6 @@ namespace AsyncTask {
    Throw(runtime_error("thread has no linked pool"));
   }
 
-#line 109 "TaskPool.cpp2"
+#line 112 "TaskPool.cpp2"
 }
 
