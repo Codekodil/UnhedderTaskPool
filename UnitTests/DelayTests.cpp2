@@ -24,9 +24,68 @@ ExpectingTimer: type = {
 DelayJoin: () = {
 	TESTPOOL(2);
 
-	delayTask:= Task<void>::Delay(100ms);
+	task: Task<void>;
 
-	_:ExpectingTimer = (100ms, 10ms);
-	delayTask.Join();
+	{
+		_:ExpectingTimer = (0ms, 5ms);
+		task = Task<void>::Delay(100ms);
+	}
+
+	_:ExpectingTimer = (100ms, 20ms);
+	task.Join();
 }
 TEST(DelayTests, DelayJoin)
+
+AwaitDelay: () = {
+	TESTPOOL(2);
+
+	task: Task<void>;
+
+	{
+		_:ExpectingTimer = (0ms, 5ms);
+		task = :() -> Task<void> ={
+			AWAIT(Task<void>::Delay(100ms));
+		}();
+	}
+
+	_:ExpectingTimer = (100ms, 20ms);
+	task.Join();
+}
+TEST(DelayTests, AwaitDelay)
+
+AfterAnother: () = {
+	TESTPOOL(2);
+
+	task: Task<void>;
+
+	{
+		_:ExpectingTimer = (0ms, 5ms);
+		task = :() -> Task<void> = {
+			AWAIT(Task<void>::Delay(100ms));
+			AWAIT(Task<void>::Delay(200ms));
+		}();
+	}
+
+	_:ExpectingTimer = (300ms, 20ms);
+	task.Join();
+}
+TEST(DelayTests, AfterAnother)
+
+InParallel: () = {
+	TESTPOOL(2);
+
+	task: Task<void>;
+
+	{
+		_:ExpectingTimer = (0ms, 5ms);
+		task = :() -> Task<void> = {
+			t100: = Task<void>::Delay(100ms);
+			AWAIT(Task<void>::Delay(200ms));
+			AWAIT(t100);
+		}();
+	}
+
+	_:ExpectingTimer = (200ms, 20ms);
+	task.Join();
+}
+TEST(DelayTests, InParallel)
