@@ -1,14 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CustomBuild Include="app.cpp2" />
     <CustomBuild Include="TaskPool.cpp2" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="app.cpp" />
     <ClCompile Include="TaskPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TaskPool.h" />
+    <ClInclude Include="..\include\TaskPool.h" />
   </ItemGroup>
 </Project>

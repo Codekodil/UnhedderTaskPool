@@ -27,7 +27,7 @@ namespace AsyncTask {
 #line 1 "TaskPool.cpp2"
 
 #define TASKPOOL_CPP2__
-#include "TaskPool.h"
+#include "..\include\TaskPool.h"
 
 #define Throw(exc) throw exc
 

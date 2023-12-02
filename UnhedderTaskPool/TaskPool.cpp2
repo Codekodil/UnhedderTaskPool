@@ -1,6 +1,6 @@
 
 #define TASKPOOL_CPP2__
-#include "TaskPool.h"
+#include "..\include\TaskPool.h"
 
 #define Throw(exc) throw exc
 
