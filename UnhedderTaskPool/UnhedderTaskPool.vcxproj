@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\cppfront\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -92,7 +92,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\cppfront\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -108,7 +108,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\cppfront\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -124,7 +124,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\..\cppfront\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -149,6 +149,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp" />
+    <ClCompile Include="TaskPool.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TaskPool.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="TaskPool.cpp2">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TaskPool.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TaskPool.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TaskPool.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TaskPool.cpp</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

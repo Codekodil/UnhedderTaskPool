@@ -1,0 +1,208 @@
+
+#define TASKPOOL_CPP2__
+#include "TaskPool.h"
+
+#define Throw(exc) throw exc
+
+using namespace AsyncTask;
+using namespace std;
+
+thread_local shared_ptr<TaskPoolImpl> _owner_pool = nullptr;
+thread_local vector<shared_ptr<PoolLink>> _pool_links{};
+
+AsyncTask: namespace = {
+
+	PoolLink: type = {
+		_pool: shared_ptr<TaskPoolImpl>;
+
+		operator=: (out this, pool: shared_ptr<TaskPoolImpl>) = _pool = pool;
+		
+		Unlink: (inout this) = _pool = nullptr;
+		GetPool: (this) -> shared_ptr<TaskPoolImpl> = _pool;
+	}
+
+	TaskPoolImpl: type = {
+		_shutdown: bool = false;
+
+		_lock: mutex = ();
+		_pending_actions: vector<function<void()>> = ();
+		_threads: vector<thread> = ();
+		_waiting: vector<*binary_semaphore> = ();
+
+		QueueAction: (inout this, action: function<void()>) = {
+			_: lock_guard<mutex> = _lock;
+			if _shutdown {
+				return;
+			}
+
+			_pending_actions.push_back(action);
+			if _waiting.size() == 0 as size_t {
+				return;
+			}
+			_waiting.front()*.release();
+			_waiting.erase(_waiting.begin());
+		}
+
+		Quit: (inout this) = {
+			_shutdown = true;
+			_: lock_guard<mutex> = _lock;
+			for _waiting do(s) {
+				s*.release();
+			}
+			_waiting.clear();
+			_pending_actions.clear();
+		}
+
+		private NextAction: (inout this) -> optional<function<void()>> = {
+			_: lock_guard<mutex> = _lock;
+			if _pending_actions.size() == 0 as size_t {
+				return ();
+			}
+			result:= _pending_actions[0];
+			_pending_actions.erase(_pending_actions.begin());
+			return result;
+		}
+
+		WorkerEntry: (inout this) = {
+			while !_shutdown {
+				next:= NextAction();
+				if next {
+					next.value()();
+				}
+				else {
+					waiting: binary_semaphore = 0;
+					{
+						_: lock_guard<mutex> = _lock;
+						_waiting.push_back(waiting&);
+					}
+					waiting.acquire();
+				}
+			}
+		}
+		operator=: (move this) = {
+			for _threads do(inout t) {
+				t.detach();
+			}
+		}
+
+		MoveThread: (inout this, move thread: thread) = {
+			_threads.push_back(thread);
+		}
+
+		Local: () -> shared_ptr<TaskPoolImpl> = {
+			if _owner_pool {
+				return _owner_pool;
+			}
+
+			while _pool_links.size() > 0 as size_t {
+				pool:= _pool_links.back()*.GetPool();
+				if pool {
+					return pool;
+				}
+				_pool_links.pop_back();
+			}
+
+			Throw(runtime_error("thread has no linked pool"));
+		}
+	}
+
+}
+
+TaskPool::TaskPool(int workerThreads) {
+	if(workerThreads <= 0)	
+		throw invalid_argument("workerThreads must be at least 1");
+
+	auto impl = _impl = make_shared<TaskPoolImpl>();
+
+	for(int i = 0; i < workerThreads; i++) {
+		thread worker([impl]() {
+			auto implCopy = _owner_pool = impl;
+			implCopy->WorkerEntry();
+			});
+		_impl->MoveThread(move(worker));
+	}
+}
+
+TaskPool::~TaskPool() {
+	_impl->Quit();
+}
+
+TaskPool::AwaitableTask::task_data::task_data() {
+	_pool_impl = TaskPoolImpl::Local();
+}
+
+bool TaskPool::AwaitableTask::task_data::IsDone() {
+	return _done;
+}
+
+void TaskPool::AwaitableTask::task_data::SetDone() {
+	{
+		const lock_guard<mutex> lock(_lock);
+		for (auto& h : _handles)
+			_pool_impl->QueueAction([h]() {h.resume(); });
+		_handles.clear();
+	}
+	_done = true;
+}
+
+void TaskPool::AwaitableTask::task_data::AddSuspend(coroutine_handle<> h) {
+	if (!_done) {
+		const lock_guard<mutex> lock(_lock);
+		_handles.push_back(h);
+		return;
+	}
+	h.resume();
+}
+
+bool TaskPool::AwaitableTask::await_ready() {
+	return _data->IsDone();
+}
+
+void TaskPool::AwaitableTask::await_suspend(coroutine_handle<> h) {
+	_data->AddSuspend(h);
+}
+
+void TaskPool::TemplateTask<void>::Join() {
+	if(_owner_pool)
+		throw runtime_error("cannot join inside a thread owned by a task pool");
+
+	binary_semaphore awaiter{0};
+
+	[&awaiter, this]() -> TaskPool::TemplateTask<void>{
+		co_await *this;
+		awaiter.release();
+	}();
+
+	awaiter.acquire();
+}
+
+TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Run(function<void()> action) {
+	auto pool = TaskPoolImpl::Local();
+	TemplateTask<void>::promise_type promise{};
+	auto task = promise.get_return_object();
+	pool->QueueAction([promise, action]() {
+			auto promiseCopy = promise;
+			action();
+			promiseCopy.return_void();
+		});
+	return move(task);
+}
+
+
+TaskPool::ThreadLinkedPool::ThreadLinkedPool(shared_ptr<TaskPool> pool) {
+	if(!pool)
+		throw invalid_argument("pool is nullptr");
+	
+	if(_owner_pool)
+		throw runtime_error("thread is owned by a task pool");
+
+	auto link = make_shared<PoolLink>(pool->_impl);
+
+	_pool_links.push_back(link);
+
+	_unlink = [link, pool](){link->Unlink();};
+}
+
+TaskPool::ThreadLinkedPool::~ThreadLinkedPool() {
+	_unlink();
+}

@@ -1,4 +1,28 @@
 
+#include "TaskPool.h"
+
+using namespace AsyncTask;
+using namespace std;
+
+#define await(expr) co_await expr
+#define coReturn(expr) co_return expr
+
+RecursiveAsync: (i: int) -> Task<int> = {
+	cout << i << "\n";
+	if i < 5 {
+		n:= await(RecursiveAsync(i + 1));
+		coReturn(n + i);
+	}
+	else {
+		n:= await(Task<int>::Run(:()->int=100));
+		coReturn(n + i);
+	}
+}
+
 main: () = {
-	std::cout << "main\n";
+	pool:= make_shared<TaskPool>(2);
+	_:ThreadLink = pool;
+
+	task:= RecursiveAsync(0);
+	cout << "result: (task.Join())$\n";
 }
