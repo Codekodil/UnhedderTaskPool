@@ -8,17 +8,17 @@
 
 #line 1 "TaskPool.cpp2"
 
-#line 13 "TaskPool.cpp2"
+#line 12 "TaskPool.cpp2"
 namespace AsyncTask {
 
  class PoolLink;
   
 
-#line 24 "TaskPool.cpp2"
+#line 23 "TaskPool.cpp2"
  class TaskPoolImpl;
   
 
-#line 112 "TaskPool.cpp2"
+#line 111 "TaskPool.cpp2"
 }
 
 
@@ -26,7 +26,6 @@ namespace AsyncTask {
 
 #line 1 "TaskPool.cpp2"
 
-#define TASKPOOL_CPP2__
 #include "..\include\TaskPool.h"
 
 #define Throw(exc) throw exc
@@ -37,14 +36,14 @@ using namespace std;
 thread_local shared_ptr<TaskPoolImpl> _owner_pool = nullptr;
 thread_local vector<shared_ptr<PoolLink>> _pool_links{};
 
-#line 13 "TaskPool.cpp2"
+#line 12 "TaskPool.cpp2"
 namespace AsyncTask {
 
  class PoolLink {
   private: shared_ptr<TaskPoolImpl> _pool; 
 
   public: explicit PoolLink(cpp2::in<shared_ptr<TaskPoolImpl>> pool);
-#line 18 "TaskPool.cpp2"
+#line 17 "TaskPool.cpp2"
   public: auto operator=(cpp2::in<shared_ptr<TaskPoolImpl>> pool) -> PoolLink& ;
 
   public: auto Unlink() & -> void;
@@ -52,7 +51,7 @@ namespace AsyncTask {
   public: PoolLink(PoolLink const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(PoolLink const&) -> void = delete;
 
-#line 22 "TaskPool.cpp2"
+#line 21 "TaskPool.cpp2"
  };
 
  class TaskPoolImpl {
@@ -65,29 +64,29 @@ namespace AsyncTask {
 
   public: auto QueueAction(cpp2::in<function<void()>> action) & -> void;
 
-#line 46 "TaskPool.cpp2"
+#line 45 "TaskPool.cpp2"
   public: auto Quit() & -> void;
 
-#line 56 "TaskPool.cpp2"
+#line 55 "TaskPool.cpp2"
   private: [[nodiscard]] auto NextAction() & -> optional<function<void()>>;
 
-#line 66 "TaskPool.cpp2"
+#line 65 "TaskPool.cpp2"
   public: auto WorkerEntry() & -> void;
 
-#line 85 "TaskPool.cpp2"
+#line 84 "TaskPool.cpp2"
   public: ~TaskPoolImpl() noexcept;
 
-#line 91 "TaskPool.cpp2"
+#line 90 "TaskPool.cpp2"
   public: auto MoveThread(thread&& thread) & -> void;
 
-#line 95 "TaskPool.cpp2"
+#line 94 "TaskPool.cpp2"
   public: [[nodiscard]] static auto Local() -> shared_ptr<TaskPoolImpl>;
   public: TaskPoolImpl() = default;
   public: TaskPoolImpl(TaskPoolImpl const&) = delete; /* No 'that' constructor, suppress copy */
   public: auto operator=(TaskPoolImpl const&) -> void = delete;
 
 
-#line 110 "TaskPool.cpp2"
+#line 109 "TaskPool.cpp2"
  };
 
 }
@@ -252,24 +251,24 @@ TaskPool::ThreadLinkedPool::~ThreadLinkedPool() {
 
 #line 1 "TaskPool.cpp2"
 
-#line 13 "TaskPool.cpp2"
+#line 12 "TaskPool.cpp2"
 namespace AsyncTask {
 
-#line 18 "TaskPool.cpp2"
+#line 17 "TaskPool.cpp2"
   PoolLink::PoolLink(cpp2::in<shared_ptr<TaskPoolImpl>> pool)
                                                           : _pool{ pool } {  }
-#line 18 "TaskPool.cpp2"
+#line 17 "TaskPool.cpp2"
   auto PoolLink::operator=(cpp2::in<shared_ptr<TaskPoolImpl>> pool) -> PoolLink&  { 
                                                           _pool = pool;
                                                           return *this;  }
 
-#line 20 "TaskPool.cpp2"
+#line 19 "TaskPool.cpp2"
   auto PoolLink::Unlink() & -> void { _pool = nullptr;  }
   [[nodiscard]] auto PoolLink::GetPool() const& -> shared_ptr<TaskPoolImpl> { return _pool;  }
 
-#line 32 "TaskPool.cpp2"
+#line 31 "TaskPool.cpp2"
   auto TaskPoolImpl::QueueAction(cpp2::in<function<void()>> action) & -> void{
-   lock_guard<mutex> auto_33_4 {_lock}; 
+   lock_guard<mutex> auto_32_4 {_lock}; 
    if (_shutdown) {
     return ; 
    }
@@ -284,7 +283,7 @@ namespace AsyncTask {
 
   auto TaskPoolImpl::Quit() & -> void{
    _shutdown = true;
-   lock_guard<mutex> auto_48_4 {_lock}; 
+   lock_guard<mutex> auto_47_4 {_lock}; 
    for ( auto const& s : _waiting ) {
     CPP2_UFCS_0(release, (*cpp2::assert_not_null(s)));
    }
@@ -293,7 +292,7 @@ namespace AsyncTask {
   }
 
   [[nodiscard]] auto TaskPoolImpl::NextAction() & -> optional<function<void()>>{
-   lock_guard<mutex> auto_57_4 {_lock}; 
+   lock_guard<mutex> auto_56_4 {_lock}; 
    if (CPP2_UFCS_0(size, _pending_actions) == cpp2::as_<size_t, 0>()) {
     return {  }; 
    }
@@ -311,7 +310,7 @@ namespace AsyncTask {
     else {
      binary_semaphore waiting {0}; 
      {
-      lock_guard<mutex> auto_75_7 {_lock}; 
+      lock_guard<mutex> auto_74_7 {_lock}; 
       if (_shutdown) {
        return ; 
       }
@@ -347,6 +346,6 @@ namespace AsyncTask {
    Throw(runtime_error("thread has no linked pool"));
   }
 
-#line 112 "TaskPool.cpp2"
+#line 111 "TaskPool.cpp2"
 }
 

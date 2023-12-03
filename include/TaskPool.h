@@ -10,13 +10,11 @@
 
 namespace AsyncTask {
 
+	class TaskPoolImpl;
+
 	class TaskPool {
 
-#ifdef TASKPOOL_CPP2__
 		std::shared_ptr<TaskPoolImpl> _impl;
-#else
-		std::shared_ptr<void> _impl;
-#endif
 
 	public:
 
@@ -33,11 +31,7 @@ namespace AsyncTask {
 				std::mutex _lock = {};
 				std::vector<std::coroutine_handle<>> _handles = {};
 
-				#ifdef TASKPOOL_CPP2__
-					std::shared_ptr<TaskPoolImpl> _pool_impl;
-				#else
-					std::shared_ptr<void> _pool_impl;
-				#endif
+				std::shared_ptr<TaskPoolImpl> _pool_impl;
 
 			public:
 
