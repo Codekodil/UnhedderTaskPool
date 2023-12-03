@@ -112,6 +112,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DelayTests.cpp" />
+    <CustomBuild Include="ExceptionTests.cpp2">
+      <FileType>CppCode</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe ExceptionTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ExceptionTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe ExceptionTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ExceptionTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\cppfront\source\cppfront.exe ExceptionTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ExceptionTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe ExceptionTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ExceptionTests.cpp</Outputs>
+    </CustomBuild>
+    <ClCompile Include="ExceptionTests.cpp" />
     <ClCompile Include="ValueTests.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -29,6 +29,7 @@ namespace AsyncTask {
 
 			class task_data {
 				bool _done = false;
+				std::exception_ptr _exc = {};
 				std::mutex _lock = {};
 				std::vector<std::coroutine_handle<>> _handles = {};
 
@@ -44,6 +45,8 @@ namespace AsyncTask {
 
 				bool IsDone();
 				void SetDone();
+				void SetException(std::exception_ptr exc);
+				void Rethrow();
 				void AddSuspend(std::coroutine_handle<> h);
 			};
 			std::shared_ptr<task_data> _data;
@@ -68,7 +71,7 @@ namespace AsyncTask {
 				}
 				std::suspend_never initial_suspend() noexcept { return {}; }
 				std::suspend_never final_suspend() noexcept { return {}; }
-				void unhandled_exception() {}
+				void unhandled_exception() { _data->SetException(std::current_exception()); }
 			};
 
 			bool await_ready();
@@ -94,7 +97,7 @@ namespace AsyncTask {
 				}
 			};
 
-			T&& await_resume() { return std::move(static_cast<value_task_data*>(_data.get())->_value.value()); }
+			T&& await_resume() { _data->Rethrow(); return std::move(static_cast<value_task_data*>(_data.get())->_value.value()); }
 
 			T&& Join() {
 				[this]() -> TemplateTask<void>{
@@ -131,7 +134,7 @@ namespace AsyncTask {
 				}
 			};
 
-			void await_resume() {}
+			void await_resume();
 
 			void Join();
 			static TemplateTask<void> Run(std::function<void()> action);

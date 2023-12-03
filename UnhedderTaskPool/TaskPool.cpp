@@ -120,20 +120,36 @@ bool TaskPool::AwaitableTask::task_data::IsDone() {
 }
 
 void TaskPool::AwaitableTask::task_data::SetDone() {
+	_done = true;
 	{
 		const lock_guard<mutex> lock(_lock);
 		for (auto& h : _handles)
 			_pool_impl->QueueAction([h]() {h.resume(); });
 		_handles.clear();
 	}
-	_done = true;
 }
+
+void TaskPool::AwaitableTask::task_data::SetException(exception_ptr exc) {
+	if(exc) {
+		_exc = exc;
+		SetDone();
+	}
+}
+
+void TaskPool::AwaitableTask::task_data::Rethrow() {
+	auto exc = _exc;
+	if(exc)
+		rethrow_exception(exc);
+}
+
 
 void TaskPool::AwaitableTask::task_data::AddSuspend(coroutine_handle<> h) {
 	if (!_done) {
 		const lock_guard<mutex> lock(_lock);
-		_handles.push_back(h);
-		return;
+		if (!_done) {
+			_handles.push_back(h);
+			return;
+		}
 	}
 	h.resume();
 }
@@ -146,18 +162,32 @@ void TaskPool::AwaitableTask::await_suspend(coroutine_handle<> h) {
 	_data->AddSuspend(h);
 }
 
+void TaskPool::TemplateTask<void>::await_resume() {
+	_data->Rethrow();
+}
+
 void TaskPool::TemplateTask<void>::Join() {
 	if(_owner_pool)
 		throw runtime_error("cannot join inside a thread owned by a task pool");
 
 	binary_semaphore awaiter{0};
+	exception_ptr exc{};
 
-	[&awaiter, this]() -> TaskPool::TemplateTask<void>{
-		co_await *this;
-		awaiter.release();
+	[&awaiter, &exc, this]() -> TaskPool::TemplateTask<void>{
+		auto& scopeAwaiter = awaiter;
+		auto& scopeExc = exc;
+		try {
+			co_await *this;
+		}
+		catch(...) {
+			scopeExc = std::current_exception();
+		}
+		scopeAwaiter.release();
 	}();
 
 	awaiter.acquire();
+	if(exc)
+		rethrow_exception(exc);
 }
 
 TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Run(function<void()> action) {
@@ -166,7 +196,12 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Run(function<void()> 
 	auto task = promise.get_return_object();
 	pool->QueueAction([promise, action]() {
 			auto promiseCopy = promise;
-			action();
+			try {
+				action();
+			}
+			catch(...) {
+				promiseCopy.unhandled_exception();
+			}
 			promiseCopy.return_void();
 		});
 	return move(task);
@@ -180,12 +215,12 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::CompletedTask() {
 }
 
 TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Delay(chrono::milliseconds ms) {
-	auto desiredEnd = std::chrono::system_clock::now() + ms;
+	auto desiredEnd = chrono::system_clock::now() + ms;
 	TemplateTask<void>::promise_type promise{};
 	auto task = promise.get_return_object();
 	thread([promise, desiredEnd]() {
 			auto promiseCopy = promise;
-			auto toWait = chrono::duration_cast<chrono::milliseconds>(desiredEnd - std::chrono::system_clock::now());
+			auto toWait = chrono::duration_cast<chrono::milliseconds>(desiredEnd - chrono::system_clock::now());
 			if(toWait > 0ms)
 				this_thread::sleep_for(toWait);
 			promiseCopy.return_void();

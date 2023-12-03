@@ -1,0 +1,56 @@
+#include "Framework.h"
+
+TestException: type = {
+	this: exception;
+}
+
+BeforeAwait: () = {
+	TESTPOOL(2);
+
+	task:= :() -> Task<void> = {
+		THROW(TestException());
+		AWAIT(Task<void>::Delay(1ms));
+	}();
+
+	EXPECT_THROW(task.Join(), TestException);
+}
+TEST(ExceptionTests, BeforeAwait)
+
+AfterAwait: () = {
+	TESTPOOL(2);
+
+	task:= :() -> Task<void> = {
+		AWAIT(Task<void>::Delay(1ms));
+		THROW(TestException());
+	}();
+
+	EXPECT_THROW(task.Join(), TestException);
+}
+TEST(ExceptionTests, AfterAwait)
+
+AwaitRethrows: () = {
+	TESTPOOL(2);
+
+	throwingTask:= :() -> Task<void> = {
+		AWAIT(Task<void>::Delay(1ms));
+		THROW(TestException());
+	}();
+
+	task:= :() -> Task<void> = {
+		scopeTask:= throwingTask$;
+		AWAIT(Task<void>::Delay(1ms));
+		AWAIT(scopeTask);
+	}();
+
+	EXPECT_THROW(task.Join(), TestException);
+}
+TEST(ExceptionTests, AwaitRethrows)
+
+RunException: () = {
+	TESTPOOL(2);
+
+	task:= Task<void>::Run(:()={THROW(TestException());});
+
+	EXPECT_THROW(task.Join(), TestException);
+}
+TEST(ExceptionTests, RunException)
