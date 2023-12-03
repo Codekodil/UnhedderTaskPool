@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace AsyncTask {
@@ -93,9 +94,9 @@ namespace AsyncTask {
 				}
 			};
 
-			T& await_resume() { return static_cast<value_task_data*>(_data.get())->_value.value(); }
+			T&& await_resume() { return std::move(static_cast<value_task_data*>(_data.get())->_value.value()); }
 
-			T& Join() {
+			T&& Join() {
 				[this]() -> TemplateTask<void>{
 					co_await *this;
 				}().Join();

@@ -15,8 +15,7 @@ ExpectingTimer: type = {
 	operator=: (move this) = {
 		delta:= chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - _start);
 		deviation:= delta - _expected;
-		EXPECT_LE(deviation, _epsilon);
-		EXPECT_GE(deviation, -_epsilon);
+		EXPECT_TRUE((-_epsilon <= deviation <= _epsilon));
 	}
 
 }
@@ -43,7 +42,7 @@ AwaitDelay: () = {
 
 	{
 		_:ExpectingTimer = (0ms, 5ms);
-		task = :() -> Task<void> ={
+		task = :() -> Task<void> = {
 			AWAIT(Task<void>::Delay(100ms));
 		}();
 	}

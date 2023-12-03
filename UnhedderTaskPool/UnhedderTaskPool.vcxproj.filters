@@ -5,6 +5,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TaskPool.cpp" />
+    <ClCompile Include="NoIncludes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\TaskPool.h" />

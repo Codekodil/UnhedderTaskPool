@@ -1,0 +1,46 @@
+#include "Framework.h"
+
+ValueJoin: () = {
+	TESTPOOL(2);
+
+	task:= Task<int>::FromResult(42);
+
+	EXPECT_EQ(42, task.Join());
+}
+TEST(ValueTests, ValueJoin)
+
+RunResult: () = {
+	TESTPOOL(2);
+
+	task:= Task<int>::Run(:()->int=42);
+
+	EXPECT_EQ(42, task.Join());
+}
+TEST(ValueTests, RunResult)
+
+AwaitValue: () = {
+	TESTPOOL(2);
+
+	task:= :() -> Task<int> = {
+		n1:= AWAIT(Task<int>::FromResult(20));
+		n2:= AWAIT(Task<int>::Run(:()->int=11));
+		RETURN(n1 + n2 * 2);
+	}();
+
+	EXPECT_EQ(42, task.Join());
+}
+TEST(ValueTests, AwaitValue)
+
+MoveResult: () = {
+	TESTPOOL(2);
+
+	task:= :() -> Task<unique_ptr<int>> = {
+		n1:= AWAIT(Task<unique_ptr<int>>::FromResult(new<int>(20)));
+		n2:= AWAIT(Task<unique_ptr<int>>::Run(:()->unique_ptr<int> =new<int>(11)));
+		n:= new<int>(n1* + n2* * 2);
+		RETURN(n);
+	}();
+
+	EXPECT_EQ(42, task.Join()*);
+}
+TEST(ValueTests, MoveResult)

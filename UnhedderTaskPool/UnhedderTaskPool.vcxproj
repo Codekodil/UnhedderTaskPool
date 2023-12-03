@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="NoIncludes.cpp" />
     <ClCompile Include="TaskPool.cpp" />
   </ItemGroup>
   <ItemGroup>
