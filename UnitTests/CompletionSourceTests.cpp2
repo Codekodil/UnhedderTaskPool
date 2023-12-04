@@ -1,0 +1,96 @@
+#include "Framework.h"
+
+SetVoid: () = {
+	TESTPOOL(2);
+
+	order: string = "";
+
+	source: TaskCompletionSource<void> = ();
+
+	sourceTask:= source.GetTask();
+
+	task:= :() -> Task<void> = {
+		task:= sourceTask$;
+		order&$* += "1";
+		AWAIT(task);
+		order&$* += "3";
+	}();
+
+	order += "2";
+
+	EXPECT_TRUE(source.SetResult());
+	EXPECT_FALSE(source.SetResult());
+
+	task.Join();
+
+	EXPECT_EQ(string("123"), order);
+}
+TEST(CompletionSourceTests, SetVoid)
+
+SetValue: () = {
+	TESTPOOL(2);
+
+	order: string = "";
+
+	source: TaskCompletionSource<int> = ();
+
+	sourceTask:= source.GetTask();
+
+	task:= :() -> Task<int> = {
+		task:= sourceTask$;
+		order&$* += "1";
+		result:= AWAIT(task);
+		order&$* += "3";
+		RETURN(result);
+	}();
+
+	order += "2";
+
+	EXPECT_TRUE(source.SetResult(42));
+	EXPECT_FALSE(source.SetResult(43));
+
+	EXPECT_EQ(42, task.Join());
+
+	EXPECT_EQ(string("123"), order);
+}
+TEST(CompletionSourceTests, SetValue)
+
+SourceThrows: () = {
+	TESTPOOL(2);
+
+	source:= new<TaskCompletionSource<void>>();
+
+	sourceTask:= source*.GetTask();
+
+	task:= :() -> Task<void> = {
+		task:= sourceTask$;
+		AWAIT(task);
+	}();
+
+	source = nullptr;
+
+	EXPECT_THROW(task.Join(), AsyncTask::UnfinishedTaskException);
+}
+TEST(CompletionSourceTests, SourceThrows)
+
+SetMoveValue: () = {
+	TESTPOOL(2);
+
+	source: TaskCompletionSource<unique_ptr<int>> = ();
+
+	sourceTask:= source.GetTask();
+
+	task:= :() -> Task<int> = {
+		task:= sourceTask$;
+		result:= AWAIT(task)*;
+		RETURN(result);
+	}();
+
+	result:= new<int>(42);
+
+	EXPECT_TRUE(source.SetResult(move(result)));
+	EXPECT_FALSE(source.SetResult(nullptr));
+
+	EXPECT_EQ(42, task.Join());
+}
+TEST(CompletionSourceTests, SetMoveValue)

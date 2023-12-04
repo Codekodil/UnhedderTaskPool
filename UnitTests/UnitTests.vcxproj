@@ -111,6 +111,7 @@
     <ClInclude Include="Framework.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CompletionSourceTests.cpp" />
     <ClCompile Include="DelayTests.cpp" />
     <CustomBuild Include="ExceptionTests.cpp2">
       <FileType>CppCode</FileType>
@@ -137,6 +138,17 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DelayTests.cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe DelayTests.cpp2 -include-std</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DelayTests.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="CompletionSourceTests.cpp2">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompletionSourceTests.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompletionSourceTests.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompletionSourceTests.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompletionSourceTests.cpp</Outputs>
     </CustomBuild>
     <None Include="packages.config" />
     <CustomBuild Include="ValueTests.cpp2">

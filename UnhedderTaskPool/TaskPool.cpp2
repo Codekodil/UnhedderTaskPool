@@ -173,7 +173,11 @@ void TaskPool::AwaitableTask::task_data::AddSuspend(coroutine_handle<> h) {
 }
 
 bool TaskPool::AwaitableTask::await_ready() {
-	return _data->IsDone();
+	if(_data->IsDone()) {
+		_data->Rethrow();
+		return true;
+	}
+	return false;
 }
 
 void TaskPool::AwaitableTask::await_suspend(coroutine_handle<> h) {
@@ -246,6 +250,14 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Delay(chrono::millise
 	return move(task);
 }
 
+TaskPool::ThreadLinkedPool::ThreadLinkedPool(ThreadLinkedPool&& that) {
+	_unlink = exchange(that._unlink, [](){});
+}
+
+TaskPool::ThreadLinkedPool& TaskPool::ThreadLinkedPool::operator=(ThreadLinkedPool&& that) {
+	exchange(_unlink, exchange(that._unlink, [](){}))();
+	return *this;
+}
 
 TaskPool::ThreadLinkedPool::ThreadLinkedPool(shared_ptr<TaskPool> pool) {
 	if(!pool)

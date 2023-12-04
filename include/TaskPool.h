@@ -6,11 +6,14 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <type_traits>
 #include <vector>
 
 namespace AsyncTask {
 
 	class TaskPoolImpl;
+
+	class UnfinishedTaskException : public std::exception {};
 
 	class TaskPool {
 
@@ -20,6 +23,11 @@ namespace AsyncTask {
 
 		TaskPool(int workerThreads);
 		~TaskPool();
+
+		TaskPool(const TaskPool&) = delete;
+		TaskPool& operator=(const TaskPool&) = delete;
+		TaskPool(const TaskPool&&) = delete;
+		TaskPool& operator=(const TaskPool&&) = delete;
 
 		class AwaitableTask {
 
@@ -140,9 +148,89 @@ namespace AsyncTask {
 			std::function<void()> _unlink = [](){};
 		public:
 			ThreadLinkedPool(const ThreadLinkedPool&) = delete;
-			ThreadLinkedPool(const ThreadLinkedPool&&) = delete;
+			ThreadLinkedPool& operator=(const ThreadLinkedPool&) = delete;
+			ThreadLinkedPool(ThreadLinkedPool&&);
+			ThreadLinkedPool& operator=(ThreadLinkedPool&&);
 			ThreadLinkedPool(std::shared_ptr<TaskPool> pool);
 			~ThreadLinkedPool();
+		};
+
+		template<typename TTask, typename TResult>
+		class BaseTaskCompletionSource {
+			TTask _task;
+		protected:
+			std::shared_ptr<void> _promise;
+		public:
+			BaseTaskCompletionSource(const BaseTaskCompletionSource<TTask, TResult>&) = delete;
+			BaseTaskCompletionSource<TTask, TResult>& operator=(const BaseTaskCompletionSource<TTask, TResult>&) = delete;
+			BaseTaskCompletionSource(BaseTaskCompletionSource<TTask, TResult>&& that) {
+				_task = that._task;
+				_promise = std::move(that._promise);
+			}
+			BaseTaskCompletionSource<TTask, TResult>& operator=(BaseTaskCompletionSource<TTask, TResult>&& that) {
+				_task = that._task;
+				auto oldPromise = std::exchange(_promise, std::exchange(that._promise, nullptr));
+				if(oldPromise)
+				{
+					try {
+						throw UnfinishedTaskException();
+					}
+					catch (...) {
+						reinterpret_cast<TTask::promise_type*>(oldPromise.get())->unhandled_exception();
+					}
+				}
+			};
+			BaseTaskCompletionSource() {
+				auto promise = std::make_shared<TTask::promise_type>();
+				_task = promise->get_return_object();
+				_promise = std::move(promise);
+			}
+			~BaseTaskCompletionSource() {
+				SetException<UnfinishedTaskException>(UnfinishedTaskException());
+			}
+
+			TTask GetTask() { return _task; }
+
+			bool SetException(auto exc)
+			{
+				if (_promise) {
+					try {
+						throw exc;
+					}
+					catch (...) {
+						reinterpret_cast<TTask::promise_type*>(_promise.get())->unhandled_exception();
+					}
+					_promise = nullptr;
+					return true;
+				}
+				return false;
+			}
+		};
+
+		template<typename TTask, typename TResult>
+		class TemplateTaskCompletionSource : public BaseTaskCompletionSource<TTask, TResult> {
+		public:
+			bool SetResult(TResult result) {
+				if (BaseTaskCompletionSource<TTask, TResult>::_promise) {
+					reinterpret_cast<TTask::promise_type*>(BaseTaskCompletionSource<TTask, TResult>::_promise.get())->return_value(std::move(result));
+					BaseTaskCompletionSource<TTask, TResult>::_promise = nullptr;
+					return true;
+				}
+				return false;
+			}
+		};
+
+		template<typename TTask>
+		class TemplateTaskCompletionSource<TTask, void> : public BaseTaskCompletionSource<TTask, void> {
+		public:
+			bool SetResult() {
+				if (BaseTaskCompletionSource<TTask, void>::_promise) {
+					reinterpret_cast<TTask::promise_type*>(BaseTaskCompletionSource<TTask, void>::_promise.get())->return_void();
+					BaseTaskCompletionSource<TTask, void>::_promise = nullptr;
+					return true;
+				}
+				return false;
+			}
 		};
 	};
 
@@ -150,6 +238,9 @@ namespace AsyncTask {
 	using Task = TaskPool::TemplateTask<T>;
 
 	using ThreadLink = TaskPool::ThreadLinkedPool;
+
+	template <typename T>
+	using TaskCompletionSource = TaskPool::TemplateTaskCompletionSource<Task<T>, T>;
 
 }
 

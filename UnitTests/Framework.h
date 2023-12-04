@@ -6,6 +6,6 @@
 using namespace AsyncTask;
 using namespace std;
 #define TESTPOOL(workers)auto pool=make_shared<TaskPool>(workers);const ThreadLink link(pool)
-#define AWAIT(expr) co_await expr
+#define AWAIT(expr) (co_await expr)
 #define RETURN(expr) co_return expr
 #define THROW(exc) throw exc
