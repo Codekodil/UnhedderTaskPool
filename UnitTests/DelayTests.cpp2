@@ -88,3 +88,25 @@ InParallel: () = {
 	task.Join();
 }
 TEST(DelayTests, InParallel)
+
+ContinueInPool: () = {
+	TESTPOOL(2);
+
+	task: Task<void>;
+
+	ids: vector<thread::id> = ();
+
+	{
+		task = :() -> Task<void> = {
+			ids&$*.push_back(this_thread::get_id());
+			AWAIT(Task<void>::ContinueInPool());
+			ids&$*.push_back(this_thread::get_id());
+		}();
+	}
+
+	task.Join();
+
+	EXPECT_EQ(2, ids.size());
+	EXPECT_NE(ids[0], ids[1]);
+}
+TEST(DelayTests, ContinueInPool)

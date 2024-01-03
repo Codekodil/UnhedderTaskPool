@@ -52,6 +52,10 @@ auto InParallel() -> void;
 #line 90 "DelayTests.cpp2"
 TEST(DelayTests, InParallel)
 
+auto ContinueInPool() -> void;
+#line 112 "DelayTests.cpp2"
+TEST(DelayTests, ContinueInPool)
+
 
 //=== Cpp2 function definitions =================================================
 
@@ -138,5 +142,27 @@ auto InParallel() -> void{
 
  ExpectingTimer auto_87_2 {200ms, 20ms}; 
  CPP2_UFCS_0(Join, std::move(task.value()));
+}
+
+#line 92 "DelayTests.cpp2"
+auto ContinueInPool() -> void{
+ TESTPOOL(2);
+
+ cpp2::deferred_init<Task<void>> task; 
+
+ vector<thread::id> ids {}; 
+
+ {
+  task.construct([_0 = (&ids)]() mutable -> Task<void>{
+   CPP2_UFCS(push_back, (*cpp2::assert_not_null(_0)), this_thread::get_id());
+   AWAIT(Task<void>::ContinueInPool());
+   CPP2_UFCS(push_back, (*cpp2::assert_not_null(_0)), this_thread::get_id());
+  }());
+ }
+
+ CPP2_UFCS_0(Join, std::move(task.value()));
+
+ EXPECT_EQ(2, CPP2_UFCS_0(size, ids));
+ EXPECT_NE(CPP2_ASSERT_IN_BOUNDS(ids, 0), CPP2_ASSERT_IN_BOUNDS(std::move(ids), 1));
 }
 

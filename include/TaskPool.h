@@ -29,6 +29,13 @@ namespace AsyncTask {
 		TaskPool(const TaskPool&&) = delete;
 		TaskPool& operator=(const TaskPool&&) = delete;
 
+		class QueuePoolTask {
+		public:
+			bool await_ready();
+			void await_suspend(std::coroutine_handle<> h);
+			void await_resume();
+		};
+
 		class AwaitableTask {
 
 		protected:
@@ -142,6 +149,7 @@ namespace AsyncTask {
 			static TemplateTask<void> Run(std::function<void()> action);
 			static TemplateTask<void> CompletedTask();
 			static TemplateTask<void> Delay(std::chrono::milliseconds ms);
+			static QueuePoolTask ContinueInPool();
 		};
 
 		class ThreadLinkedPool {

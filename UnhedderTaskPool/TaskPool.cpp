@@ -110,6 +110,13 @@ TaskPool::~TaskPool() {
 	_impl->Quit();
 }
 
+bool TaskPool::QueuePoolTask::await_ready() { return false; }
+void TaskPool::QueuePoolTask::await_suspend(coroutine_handle<> h) {
+	auto pool_impl = TaskPoolImpl::Local();
+	pool_impl->QueueAction([h]() {h.resume(); });
+}
+void TaskPool::QueuePoolTask::await_resume() {}
+
 TaskPool::AwaitableTask::task_data::task_data() {
 	_pool_impl = TaskPoolImpl::Local();
 }
@@ -230,6 +237,8 @@ TaskPool::TemplateTask<void> TaskPool::TemplateTask<void>::Delay(chrono::millise
 		}).detach();
 	return move(task);
 }
+
+TaskPool::QueuePoolTask TaskPool::TemplateTask<void>::ContinueInPool() { return TaskPool::QueuePoolTask(); }
 
 TaskPool::ThreadLinkedPool::ThreadLinkedPool(ThreadLinkedPool&& that) {
 	_unlink = exchange(that._unlink, [](){});
