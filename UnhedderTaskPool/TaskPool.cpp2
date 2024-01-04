@@ -25,7 +25,7 @@ AsyncTask: namespace = {
 
 		_lock: mutex = ();
 		_pending_actions: vector<function<void()>> = ();
-		_threads: vector<thread> = ();
+		_threads: vector<jthread> = ();
 		_waiting: vector<*binary_semaphore> = ();
 
 		QueueAction: (inout this, action: function<void()>) = {
@@ -44,12 +44,15 @@ AsyncTask: namespace = {
 
 		Quit: (inout this) = {
 			_shutdown = true;
-			_: lock_guard<mutex> = _lock;
-			for _waiting do(s) {
-				s*.release();
+			{
+				_: lock_guard<mutex> = _lock;
+				for _waiting do(s) {
+					s*.release();
+				}
+				_waiting.clear();
+				_pending_actions.clear();
 			}
-			_waiting.clear();
-			_pending_actions.clear();
+			_threads.clear(); //_threads will not be accessed after shutdown and a finished mutex lock
 		}
 
 		private NextAction: (inout this) -> optional<function<void()>> = {
@@ -81,14 +84,12 @@ AsyncTask: namespace = {
 				}
 			}
 		}
-		operator=: (move this) = {
-			for _threads do(inout t) {
-				t.detach();
-			}
-		}
 
-		MoveThread: (inout this, move thread: thread) = {
-			_threads.push_back(thread);
+		MoveThread: (inout this, move thread: jthread) = {
+			_: lock_guard<mutex> = _lock;
+			if !_shutdown {
+				_threads.push_back(thread);
+			}
 		}
 
 		Local: () -> shared_ptr<TaskPoolImpl> = {
@@ -117,7 +118,7 @@ TaskPool::TaskPool(int workerThreads) {
 	auto impl = _impl = make_shared<TaskPoolImpl>();
 
 	for(int i = 0; i < workerThreads; i++) {
-		thread worker([impl]() {
+		jthread worker([impl]() {
 			auto implCopy = _owner_pool = impl;
 			implCopy->WorkerEntry();
 			});
@@ -138,6 +139,18 @@ void TaskPool::QueuePoolTask::await_resume() {}
 
 TaskPool::AwaitableTask::task_data::task_data() {
 	_pool_impl = TaskPoolImpl::Local();
+}
+
+TaskPool::AwaitableTask::task_data::~task_data() {
+	if(!IsDone())
+	{
+		try {
+			throw UnfinishedTaskException();
+		}
+		catch (...) {
+			SetException(std::current_exception());
+		}
+	}
 }
 
 bool TaskPool::AwaitableTask::task_data::IsDone() {

@@ -92,17 +92,14 @@ TEST(DelayTests, InParallel)
 ContinueInPool: () = {
 	TESTPOOL(2);
 
-	task: Task<void>;
-
 	ids: vector<thread::id> = ();
 
-	{
-		task = :() -> Task<void> = {
-			ids&$*.push_back(this_thread::get_id());
-			AWAIT(Task<void>::ContinueInPool());
-			ids&$*.push_back(this_thread::get_id());
-		}();
-	}
+	task:= :() -> Task<void> = {
+		idsPtr:= ids&$;
+		idsPtr*.push_back(this_thread::get_id());
+		AWAIT(Task<void>::ContinueInPool());
+		idsPtr*.push_back(this_thread::get_id());
+	}();
 
 	task.Join();
 
@@ -110,3 +107,29 @@ ContinueInPool: () = {
 	EXPECT_NE(ids[0], ids[1]);
 }
 TEST(DelayTests, ContinueInPool)
+
+ContinueInPoolBreak: () = {
+	
+	i:= 0;
+
+	{
+		TESTPOOL(2);
+
+		_: Task<void> = :() -> Task<void> = {
+			iPtr:= i&$;
+			while true {
+				AWAIT(Task<void>::ContinueInPool());
+				iPtr*++;	
+			}
+		}();
+
+		this_thread::sleep_for(100ms);
+	}
+
+	EXPECT_GT(i, 0);
+	
+	iAfterJoin:= i;
+	this_thread::sleep_for(100ms);
+	EXPECT_EQ(i, iAfterJoin);
+}
+TEST(DelayTests, ContinueInPoolBreak)

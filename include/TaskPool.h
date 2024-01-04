@@ -51,6 +51,7 @@ namespace AsyncTask {
 			public:
 
 				task_data();
+				~task_data();
 
 				bool IsDone();
 				void SetDone();

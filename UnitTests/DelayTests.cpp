@@ -53,8 +53,12 @@ auto InParallel() -> void;
 TEST(DelayTests, InParallel)
 
 auto ContinueInPool() -> void;
-#line 112 "DelayTests.cpp2"
+#line 109 "DelayTests.cpp2"
 TEST(DelayTests, ContinueInPool)
+
+auto ContinueInPoolBreak() -> void;
+#line 135 "DelayTests.cpp2"
+TEST(DelayTests, ContinueInPoolBreak)
 
 
 //=== Cpp2 function definitions =================================================
@@ -148,21 +152,44 @@ auto InParallel() -> void{
 auto ContinueInPool() -> void{
  TESTPOOL(2);
 
- cpp2::deferred_init<Task<void>> task; 
-
  vector<thread::id> ids {}; 
 
- {
-  task.construct([_0 = (&ids)]() mutable -> Task<void>{
-   CPP2_UFCS(push_back, (*cpp2::assert_not_null(_0)), this_thread::get_id());
-   AWAIT(Task<void>::ContinueInPool());
-   CPP2_UFCS(push_back, (*cpp2::assert_not_null(_0)), this_thread::get_id());
-  }());
- }
+ auto task {[_0 = (&ids)]() mutable -> Task<void>{
+  auto idsPtr {_0}; 
+  CPP2_UFCS(push_back, (*cpp2::assert_not_null(idsPtr)), this_thread::get_id());
+  AWAIT(Task<void>::ContinueInPool());
+  CPP2_UFCS(push_back, (*cpp2::assert_not_null(std::move(idsPtr))), this_thread::get_id());
+ }()}; 
 
- CPP2_UFCS_0(Join, std::move(task.value()));
+ CPP2_UFCS_0(Join, std::move(task));
 
  EXPECT_EQ(2, CPP2_UFCS_0(size, ids));
  EXPECT_NE(CPP2_ASSERT_IN_BOUNDS(ids, 0), CPP2_ASSERT_IN_BOUNDS(std::move(ids), 1));
+}
+
+#line 111 "DelayTests.cpp2"
+auto ContinueInPoolBreak() -> void{
+
+ auto i {0}; 
+
+ {
+  TESTPOOL(2);
+
+  Task<void> auto_118_3 {[_0 = (&i)]() mutable -> Task<void>{
+   auto iPtr {_0}; 
+   while( true ) {
+    AWAIT(Task<void>::ContinueInPool());
+    ++*cpp2::assert_not_null(iPtr);
+   }
+  }()}; 
+
+  this_thread::sleep_for(100ms);
+ }
+
+ EXPECT_GT(i, 0);
+
+ auto iAfterJoin {i}; 
+ this_thread::sleep_for(100ms);
+ EXPECT_EQ(std::move(i), std::move(iAfterJoin));
 }
 
