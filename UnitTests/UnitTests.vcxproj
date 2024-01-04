@@ -125,11 +125,12 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ExceptionTests.cpp</Outputs>
     </CustomBuild>
     <ClCompile Include="ExceptionTests.cpp" />
+    <ClCompile Include="PoolManagementTests.cpp" />
     <ClCompile Include="ValueTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="DelayTests.cpp2">
-      <FileType>Document</FileType>
+      <FileType>CppCode</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe DelayTests.cpp2 -include-std</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">DelayTests.cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe DelayTests.cpp2 -include-std</Command>
@@ -140,7 +141,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DelayTests.cpp</Outputs>
     </CustomBuild>
     <CustomBuild Include="CompletionSourceTests.cpp2">
-      <FileType>Document</FileType>
+      <FileType>CppCode</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\cppfront\source\cppfront.exe CompletionSourceTests.cpp2 -include-std</Command>
@@ -152,7 +153,7 @@
     </CustomBuild>
     <None Include="packages.config" />
     <CustomBuild Include="ValueTests.cpp2">
-      <FileType>Document</FileType>
+      <FileType>CppCode</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe ValueTests.cpp2 -include-std</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ValueTests.cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe ValueTests.cpp2 -include-std</Command>
@@ -161,6 +162,17 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ValueTests.cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe ValueTests.cpp2 -include-std</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ValueTests.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="PoolManagementTests.cpp2">
+      <FileType>CppCode</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe PoolManagementTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PoolManagementTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe PoolManagementTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">PoolManagementTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\cppfront\source\cppfront.exe PoolManagementTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PoolManagementTests.cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\cppfront\source\cppfront.exe PoolManagementTests.cpp2 -include-std</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PoolManagementTests.cpp</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

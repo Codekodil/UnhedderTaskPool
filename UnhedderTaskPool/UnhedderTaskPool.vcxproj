@@ -152,7 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="TaskPool.cpp2">
-      <FileType>Document</FileType>
+      <FileType>CppCode</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TaskPool.cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\cppfront\source\cppfront.exe TaskPool.cpp2 -include-std</Command>

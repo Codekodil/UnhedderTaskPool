@@ -13,11 +13,37 @@ AsyncTask: namespace = {
 
 	PoolLink: type = {
 		_pool: shared_ptr<TaskPoolImpl>;
+		_rootPool: shared_ptr<TaskPool>;
 
-		operator=: (out this, pool: shared_ptr<TaskPoolImpl>) = _pool = pool;
+		operator=: (out this, pool: shared_ptr<TaskPoolImpl>, rootPool: shared_ptr<TaskPool>) = {
+			_pool = pool;
+			_rootPool = rootPool;
+		}
 		
-		Unlink: (inout this) = _pool = nullptr;
+		Unlink: (inout this) = {
+			_pool = nullptr;
+			_rootPool = nullptr;
+		}
 		GetPool: (this) -> shared_ptr<TaskPoolImpl> = _pool;
+		GetRootPool: (this) -> shared_ptr<TaskPool> = _rootPool;
+
+		TryGet: () -> shared_ptr<PoolLink> = {
+			while _pool_links.size() > 0 as size_t {
+				link:= _pool_links.back();
+				if link*.GetPool() {
+					return link;
+				}
+				_pool_links.pop_back();
+			}
+			return nullptr;
+		}
+		Get: () -> shared_ptr<PoolLink> = {
+			link:= TryGet();
+			if link {
+				return link;
+			}
+			Throw(runtime_error("thread has no linked pool"));
+		}
 	}
 
 	TaskPoolImpl: type = {
@@ -96,16 +122,7 @@ AsyncTask: namespace = {
 			if _owner_pool {
 				return _owner_pool;
 			}
-
-			while _pool_links.size() > 0 as size_t {
-				pool:= _pool_links.back()*.GetPool();
-				if pool {
-					return pool;
-				}
-				_pool_links.pop_back();
-			}
-
-			Throw(runtime_error("thread has no linked pool"));
+			return PoolLink::Get()*.GetPool();
 		}
 	}
 
@@ -288,13 +305,21 @@ TaskPool::ThreadLinkedPool::ThreadLinkedPool(shared_ptr<TaskPool> pool) {
 	if(_owner_pool)
 		throw runtime_error("thread is owned by a task pool");
 
-	auto link = make_shared<PoolLink>(pool->_impl);
+	auto link = make_shared<PoolLink>(pool->_impl, pool);
 
 	_pool_links.push_back(link);
 
-	_unlink = [link, pool](){link->Unlink();};
+	_unlink = [link](){link->Unlink();};
 }
 
 TaskPool::ThreadLinkedPool::~ThreadLinkedPool() {
 	_unlink();
+}
+
+function<void()> TaskPool::ThreadLinkedPool::LinkedThreadAction(function<void()> action) {
+	auto pool = PoolLink::Get()->GetRootPool();
+	return [pool, action](){
+		const ThreadLink link(pool);
+		action();
+	};
 }

@@ -1,0 +1,65 @@
+#include "Framework.h"
+
+ContinueInPool: () = {
+	TESTPOOL(2);
+
+	ids: vector<thread::id> = ();
+
+	task:= :() -> Task<void> = {
+		idsPtr:= ids&$;
+		idsPtr*.push_back(this_thread::get_id());
+		AWAIT(Task<void>::ContinueInPool());
+		idsPtr*.push_back(this_thread::get_id());
+	}();
+
+	task.Join();
+
+	EXPECT_EQ(2, ids.size());
+	EXPECT_NE(ids[0], ids[1]);
+}
+TEST(PoolManagementTests, ContinueInPool)
+
+ContinueInPoolBreak: () = {
+	
+	i:= 0;
+
+	{
+		TESTPOOL(2);
+
+		_: Task<void> = :() -> Task<void> = {
+			iPtr:= i&$;
+			while true {
+				AWAIT(Task<void>::ContinueInPool());
+				iPtr*++;	
+			}
+		}();
+
+		this_thread::sleep_for(100ms);
+	}
+
+	EXPECT_GT(i, 0);
+	
+	iAfterJoin:= i;
+	this_thread::sleep_for(100ms);
+	EXPECT_EQ(i, iAfterJoin);
+}
+TEST(PoolManagementTests, ContinueInPoolBreak)
+
+LinkedThread: () = {
+	TESTPOOL(2);
+
+	task:= :() -> Task<int> = {
+		AWAIT(Task<void>::Delay(200ms));
+		RETURN(1);
+	}();
+
+	_: jthread = ThreadLink::LinkedThread<jthread>(:()={
+		taskCopy:= task$;
+		otherTask:= :() -> Task<int> = {
+			result:= AWAIT(taskCopy$);
+			RETURN(result + 2);
+		}();
+		EXPECT_EQ(3, otherTask.Join());
+	});
+}
+TEST(PoolManagementTests, LinkedThread)

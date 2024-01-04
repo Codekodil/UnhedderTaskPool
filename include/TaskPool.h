@@ -162,6 +162,9 @@ namespace AsyncTask {
 			ThreadLinkedPool& operator=(ThreadLinkedPool&&);
 			ThreadLinkedPool(std::shared_ptr<TaskPool> pool);
 			~ThreadLinkedPool();
+			static std::function<void()> LinkedThreadAction(std::function<void()> action);
+			template<typename T>
+			static T LinkedThread(std::function<void()> action) { return T(LinkedThreadAction(action)); }
 		};
 
 		template<typename TTask, typename TResult>
